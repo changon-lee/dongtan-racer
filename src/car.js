@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { buildModel3, PAINTS, WHEEL_R } from './model3.js';
 import { FINISH_MARGIN } from './track.js';
+import { BoostFx } from './boostfx.js';
 
 // Tesla Model 3 Performance 근사 스펙
 const SPEC = {
@@ -81,9 +82,8 @@ export class Car {
     this.chargeMul = 1;
     this.laps = 3;
     this.assist = true;
-    this.flames = buildFlames();
-    this.body.add(this.flames);
-    this.boostVis = 0;
+    this.boostFx = new BoostFx();
+    this.body.add(this.boostFx.group);
     this.setTrack(track);
   }
 
@@ -339,46 +339,7 @@ export class Car {
     }
     this.setBrakeLights(this.braking);
 
-    // 부스터 불꽃: 켜고 끌 때 짧게 커지고 줄어듦 + 깜빡임
-    this.boostVis += ((this.boosting ? 1 : 0) - this.boostVis) * (1 - Math.exp(-14 * dt));
-    this.flames.visible = this.boostVis > 0.02;
-    if (this.flames.visible) {
-      for (const f of this.flames.children) {
-        const flicker = 0.75 + Math.random() * 0.5;
-        f.scale.set(this.boostVis, this.boostVis, this.boostVis * flicker * f.userData.len);
-      }
-    }
+    // 부스터 플라즈마 (boostfx.js)
+    this.boostFx.update(dt, this.boosting);
   }
-}
-
-// 리어 디퓨저 양쪽에서 뒤(+z)로 뿜는 불꽃. 바깥 주황 + 안쪽 파란 심
-function buildFlames() {
-  const group = new THREE.Group();
-  group.visible = false;
-  // 밑면이 원점, 끝이 +z 1m. 정점 알파로 끝으로 갈수록 투명하게
-  const cone = (r) => {
-    const g = new THREE.ConeGeometry(r, 1, 14, 4, true).translate(0, 0.5, 0).rotateX(Math.PI / 2);
-    const z = g.attributes.position;
-    const rgba = new Float32Array(z.count * 4);
-    for (let i = 0; i < z.count; i++) rgba.set([1, 1, 1, (1 - z.getZ(i)) ** 1.5], i * 4);
-    g.setAttribute('color', new THREE.BufferAttribute(rgba, 4));
-    return g;
-  };
-  // 바깥 불꽃은 일반 블렌딩(흰 차체 위에서도 색이 보이게), 심은 가산 블렌딩으로 빛나게
-  const mat = (color, opacity, blending) =>
-    new THREE.MeshBasicMaterial({ color, vertexColors: true, transparent: true, opacity, blending, depthWrite: false, side: THREE.DoubleSide });
-  const outer = cone(0.15);
-  const inner = cone(0.06);
-  const outerMat = mat(0xff6a10, 0.9, THREE.NormalBlending);
-  const innerMat = mat(0x4aa8ff, 0.8, THREE.AdditiveBlending);
-  for (const x of [-0.42, 0.42]) {
-    for (const [geo, m, len] of [[outer, outerMat, 1.8], [inner, innerMat, 0.7]]) {
-      const f = new THREE.Mesh(geo, m);
-      f.position.set(x, 0.34, 2.4);
-      f.userData.len = len;
-      f.renderOrder = geo === inner ? 3 : 2; // 심을 바깥 불꽃 위에
-      group.add(f);
-    }
-  }
-  return group;
 }

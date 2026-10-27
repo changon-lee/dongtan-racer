@@ -14,13 +14,19 @@ import { UI } from './ui.js';
 import { PAINTS } from './model3.js';
 import { TRACKS } from './tracks.js';
 import { setAnisotropy, skyTexture } from './textures.js';
+import { enterFullscreen, isTouch, setupTouch } from './touch.js';
 
 const STEP = 1 / 120; // 고정 물리 스텝
 const HORIZON = 0xd3dfe6;
 const SUN_OFFSET = new THREE.Vector3(-32, 80, 30);
 
+// 해상도 배율: 휴대폰은 낮게 시작하고, 프레임이 느리면 자동으로 더 낮춘다
+const MAX_RATIO = Math.min(devicePixelRatio, isTouch ? 1.5 : 2);
+const MIN_RATIO = isTouch ? 0.75 : 1;
+let pixelRatio = MAX_RATIO;
+
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(pixelRatio);
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.shadowMap.enabled = true;
@@ -39,7 +45,7 @@ scene.add(new THREE.HemisphereLight(0xc4dcff, 0x6b6b5a, 1.3));
 // 그림자는 차만 드리운다. 해와 그림자 카메라가 차를 따라다닌다.
 const sun = new THREE.DirectionalLight(0xfff0d8, 2.4);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.setScalar(isTouch ? 1024 : 2048);
 Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 200 });
 sun.shadow.bias = -0.0005;
 sun.shadow.normalBias = 0.02;
@@ -58,6 +64,7 @@ const ground = new THREE.Mesh(
 );
 scene.add(ground);
 const input = new Input();
+setupTouch(input);
 const minimapCanvas = document.getElementById('minimap');
 const chase = new ChaseCamera(innerWidth / innerHeight);
 const audio = new MotorAudio();
@@ -147,6 +154,7 @@ function setState(s) {
 // 출발선에서 카운트다운부터
 function begin() {
   audio.start();
+  enterFullscreen();
   ui.closeSheet();
   ui.show(null);
   car.restart();
@@ -235,9 +243,27 @@ function updateFlow(dt) {
 let acc = 0;
 let last = performance.now();
 
+// 2초 평균 프레임 시간이 24ms(약 42fps)를 넘으면 해상도 배율을 한 단계 낮춘다 (올리지는 않음)
+const perf = { t: 0, n: 0 };
+function adaptResolution(rawDt) {
+  if (state !== 'playing' || rawDt > 0.25) return; // 탭 전환 등으로 멈췄던 프레임은 제외
+  perf.t += rawDt;
+  perf.n++;
+  if (perf.t < 2) return;
+  const avg = perf.t / perf.n;
+  perf.t = perf.n = 0;
+  if (avg > 0.024 && pixelRatio > MIN_RATIO) {
+    pixelRatio = Math.max(MIN_RATIO, pixelRatio - 0.25);
+    renderer.setPixelRatio(pixelRatio);
+    renderer.setSize(innerWidth, innerHeight);
+  }
+}
+
 function frame(now) {
-  const dt = Math.min((now - last) / 1000, 0.1);
+  const rawDt = (now - last) / 1000;
+  const dt = Math.min(rawDt, 0.1);
   last = now;
+  adaptResolution(rawDt);
 
   handleKeys();
   updateFlow(dt);

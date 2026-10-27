@@ -336,6 +336,116 @@ body.circuit #stats .route-only, body:not(.circuit) #stats .circuit-only { displ
 }
 body.circuit .chip-btn { top: 262px; }
 
+/* ---------- 모바일 (터치) ---------- */
+body.touch {
+  touch-action: none; overscroll-behavior: none;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+}
+body.touch .pane, body.touch .menu-inner { touch-action: pan-y; }
+body.touch #help, body.touch .btn kbd { display: none; }
+body:not(.touch) .touch-only { display: none; }
+
+#touch { display: none; }
+body.touch #touch { display: block; }
+body[data-state="paused"] #touch, body[data-state="finished"] #touch { visibility: hidden; }
+.tgroup { position: absolute; bottom: max(16px, env(safe-area-inset-bottom)); display: flex; align-items: flex-end; gap: 12px; }
+.tgroup.steer { left: max(18px, env(safe-area-inset-left)); }
+.tgroup.pedals { right: max(18px, env(safe-area-inset-right)); }
+.tcol { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.tbtn {
+  pointer-events: auto; touch-action: none; display: grid; place-items: center;
+  width: 84px; height: 84px; border-radius: 50%;
+  font-size: 13px; font-weight: 800; letter-spacing: 0.02em; color: rgba(255, 255, 255, 0.92);
+  background: rgba(10, 12, 16, 0.38); border: 1.5px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.08s, background 0.12s, border-color 0.12s;
+}
+.tbtn svg { stroke-width: 2.6; }
+.tbtn.on { transform: scale(0.94); background: rgba(255, 255, 255, 0.28); border-color: rgba(255, 255, 255, 0.6); }
+/* 페달: 버튼 칸 자체는 투명, SVG 페달이 모양. 누르면 밟힌 것처럼 살짝 눌리고 색이 든다 */
+.tbtn.pedal { background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; border-radius: 0; }
+.tbtn.pedal svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45)); transition: transform 0.08s; }
+.tbtn.pedal .pad { fill: rgba(16, 18, 24, 0.62); stroke: rgba(255, 255, 255, 0.78); stroke-width: 2; }
+.tbtn.pedal .rib { stroke: rgba(255, 255, 255, 0.42); stroke-width: 2.4; }
+.tbtn.pedal .arm { stroke: rgba(255, 255, 255, 0.6); stroke-width: 4; }
+.tbtn.pedal.on { transform: none; background: none; }
+.tbtn.gas { width: 74px; height: 122px; }
+.tbtn.gas svg { transform-origin: 50% 100%; }
+.tbtn.gas.on svg { transform: perspective(200px) rotateX(16deg) scaleY(0.95); }
+.tbtn.gas.on .pad { fill: rgba(91, 140, 255, 0.55); stroke: #b5c9ff; }
+.tbtn.brake { width: 86px; height: 98px; }
+.tbtn.brake svg { transform-origin: 50% 0; }
+.tbtn.brake.on svg { transform: perspective(200px) rotateX(-14deg) scaleY(0.95); }
+.tbtn.brake.on .pad { fill: rgba(255, 70, 70, 0.55); stroke: #ffb0b0; }
+.tbtn.boost { width: 74px; height: 74px; color: #7fdcff; border-color: rgba(120, 210, 255, 0.45); }
+.tbtn.boost svg { width: 40px; height: 40px; filter: drop-shadow(0 0 6px rgba(80, 200, 255, 0.55)); }
+.tbtn.boost .flame { fill: currentColor; fill-opacity: 0.85; stroke: none; }
+.tbtn.boost .core { fill: #fff; stroke: none; }
+.tbtn.boost.on { background: rgba(60, 170, 255, 0.45); border-color: #bfe9ff; color: #fff; box-shadow: 0 0 24px rgba(80, 200, 255, 0.6); }
+.tbtn.boost.on .core { fill: #7fdcff; }
+
+/* 세로로 들면 가로로 돌리라는 안내 */
+#rotate { display: none; }
+@media (orientation: portrait) {
+  body.touch #rotate {
+    position: fixed; inset: 0; z-index: 50; display: grid; place-content: center; justify-items: center; gap: 14px;
+    background: #0b0d12; color: var(--text);
+  }
+  #rotate p { margin: 0; font-size: 16px; font-weight: 600; }
+  #rotate svg { color: var(--accent); animation: tilt 1.8s var(--ease) infinite; }
+}
+@keyframes tilt { 0%, 30% { transform: none; } 60%, 100% { transform: rotate(-90deg); } }
+
+/* 낮은 가로 화면(휴대폰): HUD 축소 */
+@media (max-height: 520px) {
+  #area { top: max(10px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); font-size: 12px; padding: 5px 9px; }
+  #speedo { top: 6px; }
+  #speed { font-size: 52px; }
+  #speedo .unit { font-size: 11px; }
+  #gear { display: none; }
+  #power, #boost { width: 160px; }
+  #power { margin-top: 6px; }
+  #boost { margin-top: 6px; font-size: 10px; }
+  #stats {
+    display: grid; top: 44px; right: auto; left: max(12px, env(safe-area-inset-left));
+    min-width: 150px; padding: 8px 10px; gap: 4px; font-size: 11px; border-radius: 10px;
+  }
+  #stats div:not(.core) { display: none; }
+  .chip-btn, body.circuit .chip-btn { top: max(10px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); padding: 6px 10px; font-size: 12px; }
+  #minimap { top: 50px; bottom: auto; right: max(12px, env(safe-area-inset-right)); width: 110px; height: 110px; border-radius: 12px; }
+  #credit { left: 50%; transform: translateX(-50%); bottom: 4px; font-size: 8px; white-space: nowrap; }
+  #start { font-size: 15px; padding: 9px 16px; top: 46%; }
+  #countdown { font-size: 110px; }
+
+  /* 메인 화면: 위에서부터 쌓고 넘치면 스크롤 */
+  .menu-inner {
+    top: max(12px, env(safe-area-inset-top)); bottom: 12px; transform: none; overflow-y: auto;
+    left: max(20px, env(safe-area-inset-left)); width: min(460px, 56vw);
+  }
+  .menu-shade { background: linear-gradient(90deg, rgba(8, 10, 14, 0.94) 0%, rgba(8, 10, 14, 0.8) 50%, rgba(8, 10, 14, 0.1) 75%, rgba(8, 10, 14, 0) 100%); }
+  .eyebrow { font-size: 10px; }
+  .title { font-size: 34px; margin: 6px 0 10px; }
+  .title br { display: none; }
+  .menu-inner { scrollbar-width: none; }
+  .menu-inner::-webkit-scrollbar { display: none; }
+  .menu-inner > .eyebrow, .subtitle, .menu-foot, #routePreview, .route-ends { display: none; }
+  .track-picker { margin-bottom: 12px; }
+  .track-card { padding: 9px 12px; border-radius: 12px; }
+  .track-card .name { font-size: 15px; }
+  .route-card { grid-template-columns: 1fr; padding: 12px; gap: 0; }
+  .route-ends { margin-bottom: 8px; font-size: 12px; }
+  .route-stats dd { font-size: 15px; }
+  .laps-row { margin-top: 10px; }
+  .btn { height: 44px; padding: 0 18px; font-size: 15px; }
+  .card { padding: 20px; max-height: calc(100vh - 24px); overflow-y: auto; }
+  .card h2 { margin: 4px 0 14px; font-size: 22px; }
+  .result-time { font-size: 44px; }
+  .result-stats { margin: 10px 0 14px; padding: 10px 0; }
+  .stack { gap: 8px; }
+  #sheet header { padding: 14px 20px 4px; }
+}
+
 /* 메인 화면: 출처는 오른쪽 아래, 낮은 화면에선 타이틀 축소 */
 .menu-foot { left: auto; right: 24px; max-width: 46vw; text-align: right; }
 @media (max-height: 820px) {

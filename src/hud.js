@@ -1,4 +1,5 @@
 import { BOOST } from './car.js';
+import { isTouch } from './touch.js';
 
 const fmtTime = (t) => {
   const m = Math.floor(t / 60);
@@ -54,7 +55,7 @@ export class Hud {
     this.boostBar.style.transform = `scaleX(${car.boostGauge.toFixed(3)})`;
     this.boost.classList.toggle('on', car.boosting);
     this.boost.classList.toggle('low', !car.boosting && (car.boostLock || car.boostGauge < BOOST.minStart));
-    this.message(prompt && !car.finished && car.courseTime === null ? 'W 를 눌러 출발' : '');
+    this.message(prompt && !car.finished && car.courseTime === null ? (isTouch ? '가속 버튼을 눌러 출발' : 'W 를 눌러 출발') : '');
   }
 }
 

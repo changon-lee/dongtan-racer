@@ -2,7 +2,11 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0d12" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>동탄 레이서</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
     <link rel="stylesheet" href="/src/style.css" />
@@ -21,10 +25,10 @@
         <div id="boost"><span>BOOST</span><div class="track"><i id="boostBar"></i></div></div>
       </div>
       <div id="stats" class="glass">
-        <div><span>코스 기록</span><b id="course">--</b></div>
-        <div class="route-only"><span>남은 거리</span><b id="remain">--</b></div>
-        <div class="circuit-only"><span>랩</span><b id="lap">--</b></div>
-        <div class="circuit-only"><span>현재 랩</span><b id="lapTime">--</b></div>
+        <div class="core"><span>코스 기록</span><b id="course">--</b></div>
+        <div class="route-only core"><span>남은 거리</span><b id="remain">--</b></div>
+        <div class="circuit-only core"><span>랩</span><b id="lap">--</b></div>
+        <div class="circuit-only core"><span>현재 랩</span><b id="lapTime">--</b></div>
         <div class="circuit-only"><span>베스트 랩</span><b id="bestLap">--</b></div>
         <div><span>고도 · 경사</span><b id="elev">--</b></div>
         <div><span>0–100 km/h</span><b id="zero100">--</b></div>
@@ -36,6 +40,47 @@
       <canvas id="minimap" width="200" height="200"></canvas>
       <div id="help" class="chip"><kbd>W</kbd> 가속 <kbd>S</kbd> 브레이크 <kbd>A</kbd><kbd>D</kbd> 조향 <kbd>Space</kbd> 부스터 <kbd>R</kbd> 차로 복귀 <kbd>Esc</kbd> 일시정지</div>
       <div id="credit">지도 © OpenStreetMap contributors · 고도 Copernicus DEM GLO-30 © DLR e.V., © Airbus Defence and Space GmbH</div>
+
+      <!-- 모바일 조작 버튼 (터치 기기에서만) -->
+      <div id="touch">
+        <div class="tgroup steer">
+          <div class="tbtn" data-touch="left" aria-label="왼쪽"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M15 5l-7 7 7 7" /></svg></div>
+          <div class="tbtn" data-touch="right" aria-label="오른쪽"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M9 5l7 7-7 7" /></svg></div>
+        </div>
+        <div class="tgroup pedals">
+          <div class="tcol">
+            <!-- 부스터: 불꽃 -->
+            <div class="tbtn boost" data-touch="boost" aria-label="부스터">
+              <svg viewBox="0 0 24 24">
+                <path class="flame" d="M12 1.5c.8 3.6 5.6 6 5.6 11.6a5.6 5.6 0 0 1-11.2 0c0-2.4 1.1-4.1 2.3-5.3.1 2 1 3.3 2.2 3.7-.9-3.4.2-6.7 1.1-10z" />
+                <path class="core" d="M12 12.2c.4 1.6 2.4 2.6 2.4 4.9a2.4 2.4 0 0 1-4.8 0c0-1.5.9-2.5 1.6-3.1 0 .8.4 1.3.8 1.5-.2-1.2-.2-2.2 0-3.3z" />
+              </svg>
+            </div>
+            <!-- 브레이크 페달: 위에서 매달린 넓은 패드 -->
+            <div class="tbtn pedal brake" data-touch="brake" aria-label="브레이크">
+              <svg viewBox="0 0 56 64">
+                <path class="arm" d="M28 2v14" />
+                <rect class="pad" x="5" y="16" width="46" height="40" rx="9" />
+                <path class="rib" d="M13 26h30M13 33h30M13 40h30M13 47h30" />
+              </svg>
+            </div>
+          </div>
+          <!-- 가속 페달: 바닥에 붙은 길쭉한 오르간형 -->
+          <div class="tbtn pedal gas" data-touch="throttle" aria-label="가속">
+            <svg viewBox="0 0 44 72">
+              <path class="pad" d="M11 3h22a4 4 0 0 1 4 4.2l2.2 52a4 4 0 0 1-4 4.2H8.8a4 4 0 0 1-4-4.2L7 7.2A4 4 0 0 1 11 3z" />
+              <path class="rib" d="M13 13h18M12.6 20h18.8M12.3 27h19.4M12 34h20M11.7 41h20.6M11.4 48h21.2M11 55h22" />
+              <path class="arm" d="M10 69h24" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 세로 화면 안내 (터치 기기에서만) -->
+    <div id="rotate">
+      <svg viewBox="0 0 48 48" width="56" height="56"><rect x="15" y="6" width="18" height="32" rx="3" /><path d="M8 30a16 16 0 0 0 14 12M36 18a16 16 0 0 0-14-12" /></svg>
+      <p>가로 화면으로 돌려 주세요</p>
     </div>
 
     <div id="countdown"></div>
@@ -51,7 +96,7 @@
       <div class="menu-shade"></div>
       <div class="menu-inner">
         <div class="eyebrow">Model 3 Performance · Real Road Course</div>
-        <h1 class="title">동탄<br />레이서</h1>
+        <h1 class="title">동탄<br /> 레이서</h1>
         <p class="subtitle" id="menuSubtitle"></p>
 
         <div class="track-picker">
@@ -200,6 +245,7 @@
           <li><span><kbd>O</kbd></span>옵션</li>
           <li><span><kbd>Esc</kbd></span>일시정지</li>
         </ul>
+        <p class="hint touch-only">모바일: 왼쪽 ◀ ▶ 버튼으로 조향, 오른쪽 가속·브레이크·BOOST 버튼. BOOST는 누르는 동안 가속도 같이 됩니다. 누른 채 옆 버튼으로 밀어도 됩니다.</p>
         <p class="hint">벽에 오래 붙어 있을수록, 무거운 차와 부딪힐수록 속도를 많이 잃습니다. 오토바이는 가볍습니다.</p>
       </div>
     </aside>
