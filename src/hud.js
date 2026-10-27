@@ -17,6 +17,7 @@ export class Hud {
     this.regenBar = $('regenBar');
     this.boost = $('boost');
     this.boostBar = $('boostBar');
+    this.toastEl = $('toast');
     this.prev = {};
   }
 
@@ -24,6 +25,16 @@ export class Hud {
     if (this.prev[key] === text) return;
     this.prev[key] = text;
     this.els[key].textContent = text;
+  }
+
+  // 잠깐 떴다 사라지는 알림 (랩 기록 등). gold: 신기록 강조
+  toast(text, gold = false) {
+    const el = this.toastEl;
+    el.textContent = text;
+    el.classList.toggle('gold', gold);
+    el.classList.remove('show');
+    void el.offsetWidth; // 애니메이션 재시작
+    el.classList.add('show');
   }
 
   message(text) {

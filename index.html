@@ -37,6 +37,7 @@
       </div>
       <button id="pauseBtn" class="chip-btn" title="일시정지 (Esc)"><svg viewBox="0 0 24 24" width="14" height="14"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg><span class="label">일시정지</span></button>
       <div id="start"></div>
+      <div id="toast"></div>
       <canvas id="minimap" width="200" height="200"></canvas>
       <div id="help" class="chip"><kbd>W</kbd> 가속 <kbd>S</kbd> 브레이크 <kbd>A</kbd><kbd>D</kbd> 조향 <kbd>Space</kbd> 부스터 <kbd>R</kbd> 차로 복귀 <kbd>Esc</kbd> 일시정지</div>
       <div id="credit">지도 © OpenStreetMap contributors · 고도 Copernicus DEM GLO-30 © DLR e.V., © Airbus Defence and Space GmbH</div>
@@ -110,6 +111,10 @@
                 <span>랩 수</span>
                 <div class="seg compact" id="lapsSeg" role="radiogroup" aria-label="랩 수"></div>
               </div>
+              <button class="rank-row" data-open="ranking">
+                <svg viewBox="0 0 24 24" width="16" height="16"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4" /></svg>
+                <span id="rankLabel">기록 순위</span><b id="rankBest">기록 없음</b>
+              </button>
             </div>
           </div>
         </div>
@@ -157,6 +162,7 @@
           <div><dt id="fMidLabel">평균 속도</dt><dd id="fAvg">--</dd></div>
           <div><dt>최고 속도</dt><dd id="fTop">--</dd></div>
         </dl>
+        <ol class="lap-list" id="fLaps"></ol>
         <div class="stack">
           <button class="btn primary wide" data-action="restart">다시 달리기<kbd>Enter</kbd></button>
           <button class="btn ghost wide" data-action="menu">메인 화면<kbd>Esc</kbd></button>
@@ -224,6 +230,12 @@
         </section>
 
         <button class="btn ghost small" id="settingsReset">기본값으로</button>
+      </div>
+
+      <div class="pane" id="rankingPane">
+        <p class="rank-head" id="rankTrack"></p>
+        <ol class="rank-list" id="rankList"></ol>
+        <p class="hint sub">트랙마다 따로, 상위 10개까지 이 기기(브라우저)에 저장됩니다. 기록 아래에 그때의 차량 설정이 함께 표시됩니다.</p>
       </div>
 
       <div class="pane" id="controlsPane">

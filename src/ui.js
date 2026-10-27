@@ -1,4 +1,5 @@
 import { LAP_CHOICES, TRACKS } from './tracks.js';
+import { TRAFFIC_LEVELS } from './traffic.js';
 
 // 메인 화면·일시정지·도착 화면·옵션 시트 전환. 게임 상태는 main.js가 갖고, 여기선 화면만 바꾼다.
 
@@ -39,6 +40,42 @@ try {
 
 const bestKey = (track, laps) => (track.loop ? `${BEST_KEY}:${track.id}:${laps}` : `${BEST_KEY}:${track.id}`);
 
+// 트랙별 기록 순위 (이 브라우저에 저장, 트랙마다 따로 상위 RANK_SIZE개). 서킷은 랩타임, 도로 코스는 완주 기록
+// 항목: { t: 기록(s), at: 기록 시각(ms), vmax: 최고속도 설정(km/h), accel: 가속력 배율, traffic: 교통량(도로 코스만) }
+const RANK_KEY = 'dongtan-racer:rank';
+const RANK_SIZE = 10;
+
+function readRank(track) {
+  try {
+    const v = JSON.parse(localStorage.getItem(`${RANK_KEY}:${track.id}`));
+    if (Array.isArray(v)) return v.filter((e) => e && e.t > 0);
+  } catch {
+    // 무시
+  }
+  // 순위 기능 전에 저장된 최고 기록 하나를 첫 항목으로
+  const old = read(track.loop ? `${BEST_LAP_KEY}:${track.id}` : bestKey(track));
+  return old ? [{ t: old, at: null }] : [];
+}
+
+const setupTag = (e) => {
+  if (e.vmax === undefined) return '';
+  const car = e.vmax === 262 && e.accel === 1 ? '순정' : `${e.vmax} km/h · ×${(+e.accel).toFixed(1)}`;
+  return e.traffic === undefined ? car : `${car} · 교통 ${TRAFFIC_LEVELS[e.traffic]}`;
+};
+// 도착 화면 한 줄: 이름 · 기록 · 순위
+function rankItem(label, t, rank, best) {
+  const li = document.createElement('li');
+  li.classList.toggle('best', best);
+  li.innerHTML = `<span>${label}</span><b>${fmtTime(t)}</b><span class="rank${rank === 1 ? ' top' : ''}">${rank ? `${rank}위` : '순위 밖'}</span>`;
+  return li;
+}
+
+const dateTag = (at) => {
+  if (!at) return '';
+  const d = new Date(at);
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
 export class UI {
   // actions: { start, restart, pause, resume, menu, selectTrack(id), selectLaps(n) }
   constructor(tracks, actions) {
@@ -49,7 +86,9 @@ export class UI {
     this.screens = { loading: $('loading'), menu: $('menu'), pause: $('pause'), finish: $('finish') };
     this.sheet = $('sheet');
     this.sheetTitle = $('sheetTitle');
-    this.panes = { options: $('optionsPane'), controls: $('controlsPane') };
+    this.panes = { options: $('optionsPane'), controls: $('controlsPane'), ranking: $('rankingPane') };
+    this.runRanks = []; // 이번 주행에서 세운 기록별 순위 (순위 밖이면 null)
+    this.runEntries = []; // 이번 주행에서 넣은 순위 항목 (목록에서 강조용)
     this.countdownEl = $('countdown');
 
     $('startBtn').addEventListener('click', () => actions.start());
@@ -114,6 +153,7 @@ export class UI {
     const best = read(bestKey(track, laps));
     $('mBest').textContent = best ? fmtTime(best) : '--';
     document.body.classList.toggle('circuit', track.loop);
+    this.updateRankBtn();
     this.drawRoute($('routePreview'), track);
   }
 
@@ -126,7 +166,8 @@ export class UI {
   }
 
   openSheet(kind) {
-    this.sheetTitle.textContent = kind === 'controls' ? '조작법' : '옵션';
+    this.sheetTitle.textContent = { controls: '조작법', ranking: this.track?.loop ? '랩타임 순위' : '기록 순위' }[kind] ?? '옵션';
+    if (kind === 'ranking') this.renderRanking();
     for (const [k, el] of Object.entries(this.panes)) el.classList.toggle('on', k === kind);
     this.sheet.classList.add('open');
     this.sheet.setAttribute('aria-hidden', 'false');
@@ -138,12 +179,66 @@ export class UI {
     this.sheet.setAttribute('aria-hidden', 'true');
   }
 
-  // 도착 화면 채우기. 신기록이면 저장
-  showFinish(car) {
+  // 기록 하나(서킷은 랩마다, 도로 코스는 완주 때)를 그 트랙 순위에 넣고 몇 위인지 반환 (순위 밖이면 null)
+  addRecord(track, t, { vmaxKmh, accelMul, traffic }) {
+    const list = readRank(track);
+    const entry = { t, at: Date.now(), vmax: vmaxKmh, accel: accelMul };
+    if (!track.loop) entry.traffic = traffic;
+    list.push(entry);
+    list.sort((a, b) => a.t - b.t);
+    const top = list.slice(0, RANK_SIZE);
+    const rank = top.indexOf(entry) + 1 || null;
+    try {
+      localStorage.setItem(`${RANK_KEY}:${track.id}`, JSON.stringify(top));
+    } catch {
+      // 저장 불가여도 진행
+    }
+    this.runRanks.push(rank);
+    this.runEntries.push(entry);
+    this.updateRankBtn();
+    return rank;
+  }
+
+  resetRun() {
+    this.runRanks = [];
+    this.runEntries = [];
+  }
+
+  // 옵션 시트의 순위 목록 (이번 주행에서 세운 기록은 강조)
+  renderRanking() {
+    const track = this.track;
+    const list = readRank(track);
+    const ol = this.$('rankList');
+    ol.innerHTML = '';
+    this.$('rankTrack').textContent = `${TRACKS.find((x) => x.id === track.id).name} · ${track.loop ? '한 바퀴 기록' : '완주 기록'} 상위 ${RANK_SIZE}`;
+    if (!list.length) {
+      ol.innerHTML = `<li class="empty">아직 기록이 없습니다. ${track.loop ? '한 바퀴를 돌면' : '완주하면'} 여기에 남습니다.</li>`;
+      return;
+    }
+    const mine = new Set(this.runEntries.map((e) => e.at));
+    list.forEach((e, k) => {
+      const li = document.createElement('li');
+      li.classList.toggle('now', e.at !== null && mine.has(e.at));
+      li.innerHTML = `<b class="pos">${k + 1}</b><span class="time">${fmtTime(e.t)}</span><span class="date">${dateTag(e.at)}</span><span class="tag">${setupTag(e)}</span>`;
+      ol.appendChild(li);
+    });
+  }
+
+  // 메인 화면 순위 버튼: 이름과 1위 기록
+  updateRankBtn() {
+    const best = readRank(this.track)[0];
+    this.$('rankLabel').textContent = this.track.loop ? '랩타임 순위' : '기록 순위';
+    this.$('rankBest').textContent = best ? `1위 ${fmtTime(best.t)}` : '기록 없음';
+  }
+
+  // 도착 화면 채우기. 신기록이면 저장. settings: 순위 항목에 남길 설정값
+  showFinish(car, settings) {
     const $ = this.$;
     const track = car.track;
     const info = TRACKS.find((x) => x.id === track.id);
     const t = car.courseTime;
+    // 도로 코스는 완주 기록이 순위 항목 (최고 기록을 덮어쓰기 전에 넣어야 예전 기록과 겹치지 않음)
+    const courseRank = track.loop ? null : this.addRecord(track, t, settings);
     const key = bestKey(track, car.laps);
     const prev = read(key);
     const record = prev === null || t < prev;
@@ -152,6 +247,8 @@ export class UI {
     $('fTime').textContent = fmtTime(t);
     $('fBadge').classList.toggle('on', record);
     $('fBest').textContent = fmtTime(record ? t : prev);
+    const lapsEl = $('fLaps');
+    lapsEl.innerHTML = '';
     if (track.loop) {
       // 베스트 랩 (트랙별, 랩 수와 무관)
       const lapKey = `${BEST_LAP_KEY}:${track.id}`;
@@ -160,9 +257,14 @@ export class UI {
       if (lap && (prevLap === null || lap < prevLap)) write(lapKey, lap);
       $('fMidLabel').textContent = '베스트 랩';
       $('fAvg').textContent = lap ? fmtTime(lap) : '--';
+      // 이번 주행 랩별 기록과 지금 순위 (랩이 끝날 때 main.js가 addRecord로 넣어 둠. 뒤 랩에 밀렸을 수 있으니 다시 찾는다)
+      const list = readRank(track);
+      const rankNow = (e) => (e ? list.findIndex((x) => x.at === e.at && x.t === e.t) + 1 || null : null);
+      car.lapTimes.forEach((lt, k) => lapsEl.appendChild(rankItem(`${k + 1}랩`, lt, rankNow(this.runEntries[k]), lt === lap)));
     } else {
       $('fMidLabel').textContent = '평균 속도';
       $('fAvg').textContent = `${Math.round((car.travel / t) * 3.6)} km/h`;
+      lapsEl.appendChild(rankItem('완주', t, courseRank, false));
     }
     $('fTop').textContent = `${Math.round(car.topSpeed * 3.6)} km/h`;
     this.setSelection(track.id, car.laps);

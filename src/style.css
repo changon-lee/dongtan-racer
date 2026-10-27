@@ -502,3 +502,54 @@ body[data-state="paused"] #touch, body[data-state="finished"] #touch { visibilit
   .tbtn.boost { width: 62px; height: 62px; }
   .tbtn.boost svg { width: 34px; height: 34px; }
 }
+
+/* ---------- 기록 순위 ---------- */
+.rank-row {
+  display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 12px; padding: 10px 12px; border-radius: 12px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); font-size: 13px; font-weight: 600; text-align: left;
+  transition: background 0.2s;
+}
+.rank-row:hover { background: rgba(255, 255, 255, 0.1); }
+.rank-row svg { color: #ffd166; flex: none; }
+.rank-row b { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--muted); }
+.rank-head { margin: 4px 0 10px; font-size: 13px; color: var(--muted); }
+.rank-list, .lap-list { list-style: none; margin: 0; padding: 0; }
+.rank-list li {
+  display: grid; grid-template-columns: 30px 1fr auto; column-gap: 10px; row-gap: 2px; align-items: baseline;
+  padding: 10px 6px; border-bottom: 1px solid var(--line);
+}
+.rank-list .pos { grid-row: span 2; align-self: center; font-size: 17px; font-weight: 800; text-align: center; color: var(--muted); }
+.rank-list li:nth-child(1) .pos { color: #ffd166; }
+.rank-list li:nth-child(2) .pos { color: #dfe4ee; }
+.rank-list li:nth-child(3) .pos { color: #e3a76f; }
+.rank-list .time { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.rank-list .date { font-size: 12px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.rank-list .tag { grid-column: 2 / 4; font-size: 11px; color: var(--muted); }
+.rank-list li.now { background: rgba(91, 140, 255, 0.14); border-radius: 10px; }
+.rank-list li.empty { display: block; border: 0; color: var(--muted); font-size: 13px; }
+.lap-list { display: grid; gap: 4px; margin: -8px 0 20px; font-size: 14px; }
+.lap-list:empty { display: none; }
+.lap-list li { display: grid; grid-template-columns: 52px 1fr auto; align-items: baseline; padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); text-align: left; }
+.lap-list li span:first-child { color: var(--muted); font-size: 12px; }
+.lap-list li b { font-variant-numeric: tabular-nums; }
+.lap-list li.best b { color: #9fdcff; }
+.lap-list .rank { font-size: 12px; font-weight: 700; color: var(--muted); }
+.lap-list .rank.top { color: #ffd166; }
+
+/* 랩 기록 알림 */
+#toast {
+  position: absolute; top: 40%; left: 50%; transform: translateX(-50%); opacity: 0; pointer-events: none; white-space: nowrap;
+  padding: 10px 18px; border-radius: 12px; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums;
+  background: rgba(10, 12, 16, 0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+#toast.gold { color: #ffd166; }
+#toast.show { animation: toast 2.8s var(--ease) both; }
+@keyframes toast {
+  0% { opacity: 0; transform: translate(-50%, 10px); }
+  10%, 80% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 0); }
+}
+@media (max-height: 520px) {
+  .rank-row { margin-top: 8px; padding: 8px 10px; }
+  #toast { font-size: 15px; padding: 8px 14px; }
+}

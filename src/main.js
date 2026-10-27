@@ -10,7 +10,7 @@ import { ChaseCamera } from './camera.js';
 import { Hud, Minimap } from './hud.js';
 import { MotorAudio } from './audio.js';
 import { Settings } from './settings.js';
-import { UI } from './ui.js';
+import { UI, fmtTime } from './ui.js';
 import { PAINTS } from './model3.js';
 import { TRACKS } from './tracks.js';
 import { setAnisotropy, skyTexture } from './textures.js';
@@ -163,6 +163,8 @@ function begin() {
   enterFullscreen();
   ui.closeSheet();
   ui.show(null);
+  ui.resetRun();
+  lapsSeen = 0;
   car.restart();
   car.topSpeed = 0;
   countdownT = COUNTDOWN;
@@ -188,6 +190,7 @@ function resume() {
 function toMenu() {
   ui.closeSheet();
   ui.countdown('');
+  lapsSeen = 0;
   car.restart();
   car.topSpeed = 0;
   ui.show('menu');
@@ -243,8 +246,16 @@ function updateFlow(dt) {
     setState('finished');
     finishT = 1.4; // 결승선 통과 후 잠깐 달리는 모습을 보여주고 결과 화면
   }
-  if (state === 'finished' && finishT > 0 && (finishT -= dt) <= 0) ui.showFinish(car);
+  if (state === 'finished' && finishT > 0 && (finishT -= dt) <= 0) ui.showFinish(car, settings.values);
+  // 서킷: 랩이 끝날 때마다 그 트랙 순위에 넣고 화면에 잠깐 알림
+  while (track.loop && car.lapTimes.length > lapsSeen) {
+    const t = car.lapTimes[lapsSeen++];
+    const rank = ui.addRecord(track, t, settings.values);
+    hud.toast(`${lapsSeen}랩 ${fmtTime(t)}${rank ? ` · ${rank}위` : ''}${rank === 1 ? ' · 랩 신기록' : ''}`, rank === 1);
+  }
 }
+
+let lapsSeen = 0; // 순위에 넣은 랩 수
 
 let acc = 0;
 let last = performance.now();
