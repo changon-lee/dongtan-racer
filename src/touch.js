@@ -33,13 +33,15 @@ export function setupTouch(input) {
   };
   for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) pad.addEventListener(type, up);
   pad.addEventListener('contextmenu', (e) => e.preventDefault());
-  // 일시정지 등으로 화면이 바뀌면 누르던 버튼은 놓은 것으로
-  addEventListener('blur', () => {
+  // 일시정지 등으로 화면이 바뀌면 누르던 버튼은 놓은 것으로 (손을 떼는 이벤트를 못 받아도 눌린 채 남지 않게)
+  const release = () => {
     fingers.clear();
     refresh();
-  });
+  };
+  addEventListener('blur', release);
   // iOS 핀치 확대 막기
   document.addEventListener('gesturestart', (e) => e.preventDefault());
+  return release;
 }
 
 // 안드로이드: 주행 시작 때 전체 화면 (방향은 자유. iPhone Safari는 지원 안 함 → 조용히 무시)

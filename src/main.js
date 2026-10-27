@@ -64,7 +64,7 @@ const ground = new THREE.Mesh(
 );
 scene.add(ground);
 const input = new Input();
-setupTouch(input);
+const releaseTouch = setupTouch(input);
 const minimapCanvas = document.getElementById('minimap');
 const chase = new ChaseCamera(innerWidth / innerHeight);
 const audio = new MotorAudio();
@@ -149,7 +149,13 @@ function setState(s) {
   state = s;
   document.body.dataset.state = s;
   audio.setPaused(s === 'paused');
+  if (s !== 'playing' && s !== 'countdown') releaseTouch();
 }
+
+// 다른 앱·탭으로 넘어가면 자동 일시정지 (전화·알림으로 나갔다 와도 차가 혼자 달리고 있지 않게, 소리도 멈춤)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) pause();
+});
 
 // 출발선에서 카운트다운부터
 function begin() {
@@ -244,18 +250,30 @@ let acc = 0;
 let last = performance.now();
 
 // 2초 평균 프레임 시간이 24ms(약 42fps)를 넘으면 해상도 배율을 한 단계 낮춘다 (올리지는 않음)
-const perf = { t: 0, n: 0 };
+// 낮췄는데 빨라지지 않으면 해상도 탓이 아니다 (예: 아이폰 저전력 모드의 30fps 제한) → 되돌리고 그만 조절
+const perf = { t: 0, n: 0, prevAvg: 0, prevRatio: 0, done: false };
+function setRatio(r) {
+  pixelRatio = r;
+  renderer.setPixelRatio(r);
+  renderer.setSize(innerWidth, innerHeight);
+}
 function adaptResolution(rawDt) {
-  if (state !== 'playing' || rawDt > 0.25) return; // 탭 전환 등으로 멈췄던 프레임은 제외
+  if (perf.done || state !== 'playing' || rawDt > 0.25) return; // 탭 전환 등으로 멈췄던 프레임은 제외
   perf.t += rawDt;
   perf.n++;
   if (perf.t < 2) return;
   const avg = perf.t / perf.n;
   perf.t = perf.n = 0;
+  if (perf.prevRatio && avg > perf.prevAvg * 0.9) {
+    setRatio(perf.prevRatio);
+    perf.done = true;
+    return;
+  }
+  perf.prevRatio = 0;
   if (avg > 0.024 && pixelRatio > MIN_RATIO) {
-    pixelRatio = Math.max(MIN_RATIO, pixelRatio - 0.25);
-    renderer.setPixelRatio(pixelRatio);
-    renderer.setSize(innerWidth, innerHeight);
+    perf.prevAvg = avg;
+    perf.prevRatio = pixelRatio;
+    setRatio(Math.max(MIN_RATIO, pixelRatio - 0.25));
   }
 }
 
