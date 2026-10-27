@@ -2,6 +2,13 @@ import * as THREE from 'three';
 
 const clamp = THREE.MathUtils.clamp;
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+const D2R = Math.PI / 180;
+
+// 세로 화면: 좌우 시야가 화면비 0.75일 때만큼은 보이도록 세로 FOV를 넓힌다 (최대 105°)
+function fitFov(fov, aspect) {
+  if (aspect >= 0.75) return fov;
+  return Math.min(105, (2 * Math.atan((Math.tan((fov / 2) * D2R) * 0.75) / aspect)) / D2R);
+}
 
 export class ChaseCamera {
   constructor(aspect) {
@@ -40,7 +47,7 @@ export class ChaseCamera {
 
     // 262km/h 이후(리미터 해제)는 450km/h까지 FOV를 조금 더 벌린다
     // 부스터 중엔 10도 더
-    const fov = 60 + 22 * Math.pow(speedK, 1.3) + 8 * clamp((car.v - 72) / 53, 0, 1) + this.boostK * 10;
+    const fov = fitFov(60 + 22 * Math.pow(speedK, 1.3) + 8 * clamp((car.v - 72) / 53, 0, 1) + this.boostK * 10, cam.aspect);
     if (Math.abs(fov - cam.fov) > 0.01) {
       cam.fov = fov;
       cam.updateProjectionMatrix();
@@ -61,8 +68,9 @@ export class ChaseCamera {
     const rz = -Math.sin(a);
     const shift = 2.2;
     cam.lookAt(p.x - rx * shift, p.y + 0.6, p.z - rz * shift);
-    if (Math.abs(cam.fov - 42) > 0.01) {
-      cam.fov = 42;
+    const fov = fitFov(42, cam.aspect);
+    if (Math.abs(cam.fov - fov) > 0.01) {
+      cam.fov = fov;
       cam.updateProjectionMatrix();
     }
   }

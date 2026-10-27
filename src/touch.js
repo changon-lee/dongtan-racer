@@ -42,11 +42,8 @@ export function setupTouch(input) {
   document.addEventListener('gesturestart', (e) => e.preventDefault());
 }
 
-// 안드로이드: 주행 시작 때 전체 화면 + 가로 고정 (iPhone Safari는 지원 안 함 → 조용히 무시)
+// 안드로이드: 주행 시작 때 전체 화면 (방향은 자유. iPhone Safari는 지원 안 함 → 조용히 무시)
 export function enterFullscreen() {
   if (!isTouch || document.fullscreenElement) return;
-  document.documentElement
-    .requestFullscreen?.({ navigationUI: 'hide' })
-    .then(() => screen.orientation?.lock?.('landscape'))
-    .catch(() => {});
+  document.documentElement.requestFullscreen?.({ navigationUI: 'hide' })?.catch(() => {});
 }

@@ -35,7 +35,7 @@
         <div><span>0–100 최고</span><b id="best">--</b></div>
         <div><span>최고 속도</span><b id="vmax">0 km/h</b></div>
       </div>
-      <button id="pauseBtn" class="chip-btn" title="일시정지 (Esc)"><svg viewBox="0 0 24 24" width="14" height="14"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>일시정지</button>
+      <button id="pauseBtn" class="chip-btn" title="일시정지 (Esc)"><svg viewBox="0 0 24 24" width="14" height="14"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg><span class="label">일시정지</span></button>
       <div id="start"></div>
       <canvas id="minimap" width="200" height="200"></canvas>
       <div id="help" class="chip"><kbd>W</kbd> 가속 <kbd>S</kbd> 브레이크 <kbd>A</kbd><kbd>D</kbd> 조향 <kbd>Space</kbd> 부스터 <kbd>R</kbd> 차로 복귀 <kbd>Esc</kbd> 일시정지</div>
@@ -76,13 +76,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 세로 화면 안내 (터치 기기에서만) -->
-    <div id="rotate">
-      <svg viewBox="0 0 48 48" width="56" height="56"><rect x="15" y="6" width="18" height="32" rx="3" /><path d="M8 30a16 16 0 0 0 14 12M36 18a16 16 0 0 0-14-12" /></svg>
-      <p>가로 화면으로 돌려 주세요</p>
-    </div>
-
     <div id="countdown"></div>
 
     <!-- 불러오는 중 -->

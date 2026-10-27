@@ -345,6 +345,13 @@ body.touch .pane, body.touch .menu-inner { touch-action: pan-y; }
 body.touch #help, body.touch .btn kbd { display: none; }
 body:not(.touch) .touch-only { display: none; }
 
+/* 터치 기기는 화면 크기와 상관없이 오른쪽 아래를 페달에 비워 준다:
+   미니맵은 일시정지 아래(오른쪽 위), 기록은 왼쪽 위로. (:where로 우선순위를 낮춰 아래 휴대폰용 축소가 이기게) */
+:where(body.touch) #stats { top: 64px; right: auto; left: max(24px, env(safe-area-inset-left)); }
+body.touch .chip-btn { top: 20px; right: max(24px, env(safe-area-inset-right)); }
+:where(body.touch) #minimap { top: 66px; bottom: auto; right: max(24px, env(safe-area-inset-right)); width: 170px; height: 170px; }
+:where(body.touch) #credit { left: 50%; transform: translateX(-50%); white-space: nowrap; }
+
 #touch { display: none; }
 body.touch #touch { display: block; }
 body[data-state="paused"] #touch, body[data-state="finished"] #touch { visibility: hidden; }
@@ -385,18 +392,6 @@ body[data-state="paused"] #touch, body[data-state="finished"] #touch { visibilit
 .tbtn.boost.on { background: rgba(60, 170, 255, 0.45); border-color: #bfe9ff; color: #fff; box-shadow: 0 0 24px rgba(80, 200, 255, 0.6); }
 .tbtn.boost.on .core { fill: #7fdcff; }
 
-/* 세로로 들면 가로로 돌리라는 안내 */
-#rotate { display: none; }
-@media (orientation: portrait) {
-  body.touch #rotate {
-    position: fixed; inset: 0; z-index: 50; display: grid; place-content: center; justify-items: center; gap: 14px;
-    background: #0b0d12; color: var(--text);
-  }
-  #rotate p { margin: 0; font-size: 16px; font-weight: 600; }
-  #rotate svg { color: var(--accent); animation: tilt 1.8s var(--ease) infinite; }
-}
-@keyframes tilt { 0%, 30% { transform: none; } 60%, 100% { transform: rotate(-90deg); } }
-
 /* 낮은 가로 화면(휴대폰): HUD 축소 */
 @media (max-height: 520px) {
   #area { top: max(10px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); font-size: 12px; padding: 5px 9px; }
@@ -412,7 +407,7 @@ body[data-state="paused"] #touch, body[data-state="finished"] #touch { visibilit
     min-width: 150px; padding: 8px 10px; gap: 4px; font-size: 11px; border-radius: 10px;
   }
   #stats div:not(.core) { display: none; }
-  .chip-btn, body.circuit .chip-btn { top: max(10px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); padding: 6px 10px; font-size: 12px; }
+  .chip-btn, body.circuit .chip-btn, body.touch .chip-btn { top: max(10px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); padding: 6px 10px; font-size: 12px; }
   #minimap { top: 50px; bottom: auto; right: max(12px, env(safe-area-inset-right)); width: 110px; height: 110px; border-radius: 12px; }
   #credit { left: 50%; transform: translateX(-50%); bottom: 4px; font-size: 8px; white-space: nowrap; }
   #start { font-size: 15px; padding: 9px 16px; top: 46%; }
@@ -455,4 +450,55 @@ body[data-state="paused"] #touch, body[data-state="finished"] #touch { visibilit
 }
 @media (max-width: 900px) {
   .menu-foot { left: clamp(24px, 7vw, 120px); max-width: none; text-align: left; }
+}
+
+/* ---------- 세로 화면 (휴대폰 세로) ---------- */
+@media (orientation: portrait) and (max-width: 700px) {
+  /* 메인 화면: 글이 화면 전체를 덮으니 배경을 위아래로 어둡게 */
+  .menu-shade { background: linear-gradient(180deg, rgba(8, 10, 14, 0.92) 0%, rgba(8, 10, 14, 0.78) 62%, rgba(8, 10, 14, 0.35) 100%); }
+  .menu-inner {
+    left: 20px; width: calc(100vw - 40px); top: max(20px, env(safe-area-inset-top)); bottom: 12px; transform: none;
+    overflow-y: auto; scrollbar-width: none;
+  }
+  .menu-inner::-webkit-scrollbar { display: none; }
+  .title { font-size: 48px; margin: 8px 0 12px; }
+  .subtitle { font-size: 14px; margin-bottom: 18px; }
+  .track-picker { margin-bottom: 18px; }
+  .route-stats dd { font-size: 15px; }
+  .menu-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .menu-actions #startBtn { grid-column: 1 / -1; }
+  .menu-foot { display: none; } /* 출처는 주행 화면에 표시 */
+
+  /* HUD: 속도계 가운데 위, 그 아래 왼쪽 기록 · 오른쪽 미니맵 */
+  #area { top: max(10px, env(safe-area-inset-top)); left: 12px; font-size: 11px; padding: 5px 9px; max-width: calc(50vw - 84px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #speedo { top: max(6px, env(safe-area-inset-top)); }
+  #speed { font-size: 48px; }
+  #speedo .unit { font-size: 11px; }
+  #gear { display: none; }
+  #power, #boost { width: 140px; }
+  #power { margin-top: 6px; }
+  #boost { margin-top: 6px; font-size: 10px; }
+  #stats, body.touch #stats {
+    display: grid; top: 118px; right: auto; left: 12px;
+    min-width: 140px; padding: 8px 10px; gap: 4px; font-size: 11px; border-radius: 10px;
+  }
+  #stats div:not(.core) { display: none; }
+  .chip-btn, body.circuit .chip-btn, body.touch .chip-btn { top: max(10px, env(safe-area-inset-top)); right: 12px; padding: 8px; }
+  .chip-btn .label { display: none; }
+  #minimap { top: 118px; bottom: auto; right: 12px; width: 110px; height: 110px; border-radius: 12px; }
+  /* 아래는 버튼 자리라 출처는 미니맵 아래로 */
+  #credit { top: 236px; bottom: auto; left: 12px; right: 12px; transform: none; font-size: 8px; white-space: normal; text-align: center; }
+  #start { font-size: 15px; padding: 9px 16px; }
+  #countdown { font-size: 120px; }
+
+  /* 버튼: 좁은 폭에 맞게 작게 */
+  .tgroup { gap: 8px; bottom: max(14px, env(safe-area-inset-bottom)); }
+  .tgroup.steer { left: 12px; }
+  .tgroup.pedals { right: 12px; }
+  .tcol { gap: 8px; }
+  .tbtn { width: 70px; height: 70px; }
+  .tbtn.gas { width: 62px; height: 104px; }
+  .tbtn.brake { width: 72px; height: 82px; }
+  .tbtn.boost { width: 62px; height: 62px; }
+  .tbtn.boost svg { width: 34px; height: 34px; }
 }
