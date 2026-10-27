@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>동탄 레이서</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body data-state="loading">
+    <div id="app"></div>
+
+    <!-- 주행 HUD -->
+    <div id="hud">
+      <div id="area" class="chip">동탄대로</div>
+      <div id="speedo">
+        <div id="speed">0</div>
+        <div class="unit">km/h</div>
+        <div id="power"><i class="regen" id="regenBar"></i><i id="powerBar"></i></div>
+        <div id="gear">P R N <b>D</b></div>
+        <div id="boost"><span>BOOST</span><div class="track"><i id="boostBar"></i></div></div>
+      </div>
+      <div id="stats" class="glass">
+        <div><span>코스 기록</span><b id="course">--</b></div>
+        <div class="route-only"><span>남은 거리</span><b id="remain">--</b></div>
+        <div class="circuit-only"><span>랩</span><b id="lap">--</b></div>
+        <div class="circuit-only"><span>현재 랩</span><b id="lapTime">--</b></div>
+        <div class="circuit-only"><span>베스트 랩</span><b id="bestLap">--</b></div>
+        <div><span>고도 · 경사</span><b id="elev">--</b></div>
+        <div><span>0–100 km/h</span><b id="zero100">--</b></div>
+        <div><span>0–100 최고</span><b id="best">--</b></div>
+        <div><span>최고 속도</span><b id="vmax">0 km/h</b></div>
+      </div>
+      <button id="pauseBtn" class="chip-btn" title="일시정지 (Esc)"><svg viewBox="0 0 24 24" width="14" height="14"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>일시정지</button>
+      <div id="start"></div>
+      <canvas id="minimap" width="200" height="200"></canvas>
+      <div id="help" class="chip"><kbd>W</kbd> 가속 <kbd>S</kbd> 브레이크 <kbd>A</kbd><kbd>D</kbd> 조향 <kbd>Space</kbd> 부스터 <kbd>R</kbd> 차로 복귀 <kbd>Esc</kbd> 일시정지</div>
+      <div id="credit">지도 © OpenStreetMap contributors · 고도 Copernicus DEM GLO-30 © DLR e.V., © Airbus Defence and Space GmbH</div>
+    </div>
+
+    <div id="countdown"></div>
+
+    <!-- 불러오는 중 -->
+    <section id="loading" class="screen show">
+      <div class="loader"><span></span></div>
+      <p>실제 도로를 불러오는 중</p>
+    </section>
+
+    <!-- 메인 화면 -->
+    <section id="menu" class="screen">
+      <div class="menu-shade"></div>
+      <div class="menu-inner">
+        <div class="eyebrow">Model 3 Performance · Real Road Course</div>
+        <h1 class="title">동탄<br />레이서</h1>
+        <p class="subtitle" id="menuSubtitle"></p>
+
+        <div class="track-picker">
+          <div class="tracks" id="trackList" role="radiogroup" aria-label="트랙 선택"></div>
+          <div class="route-card glass">
+            <canvas id="routePreview" width="240" height="240"></canvas>
+            <div class="route-info">
+              <div class="route-ends">
+                <div><i class="dot start"></i><span id="routeFrom"></span></div>
+                <div><i class="dot end"></i><span id="routeTo"></span></div>
+              </div>
+              <dl class="route-stats">
+                <div><dt>거리</dt><dd id="mDist">--</dd></div>
+                <div><dt>고도</dt><dd id="mElev">--</dd></div>
+                <div><dt>최고 기록</dt><dd id="mBest">--</dd></div>
+              </dl>
+              <div class="laps-row" id="lapsRow">
+                <span>랩 수</span>
+                <div class="seg compact" id="lapsSeg" role="radiogroup" aria-label="랩 수"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-actions">
+          <button class="btn primary" id="startBtn">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" /></svg>
+            주행 시작<kbd>Enter</kbd>
+          </button>
+          <button class="btn ghost" data-open="options">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></svg>
+            옵션
+          </button>
+          <button class="btn ghost" data-open="controls">
+            <svg viewBox="0 0 24 24" width="18" height="18"><rect x="2.5" y="6" width="19" height="12" rx="2.5" /><path d="M6.5 10h1M10.5 10h1M14.5 10h1M8 14h8" /></svg>
+            조작법
+          </button>
+        </div>
+      </div>
+      <footer class="menu-foot">지도 데이터 © OpenStreetMap contributors · 고도 Copernicus DEM GLO-30 © DLR e.V. 2010-2014, © Airbus Defence and Space GmbH 2014-2018</footer>
+    </section>
+
+    <!-- 일시정지 -->
+    <section id="pause" class="screen modal">
+      <div class="card glass">
+        <div class="eyebrow">Paused</div>
+        <h2>일시정지</h2>
+        <div class="stack">
+          <button class="btn primary wide" data-action="resume">계속 달리기<kbd>Esc</kbd></button>
+          <button class="btn ghost wide" data-open="options">옵션</button>
+          <button class="btn ghost wide" data-action="restart">처음부터 다시</button>
+          <button class="btn ghost wide" data-action="menu">메인 화면</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 도착 -->
+    <section id="finish" class="screen modal">
+      <div class="card glass result">
+        <div class="eyebrow" id="fTitle">Finish</div>
+        <div class="result-time" id="fTime">0:00.0</div>
+        <div class="badge" id="fBadge">신기록</div>
+        <dl class="result-stats">
+          <div><dt>최고 기록</dt><dd id="fBest">--</dd></div>
+          <div><dt id="fMidLabel">평균 속도</dt><dd id="fAvg">--</dd></div>
+          <div><dt>최고 속도</dt><dd id="fTop">--</dd></div>
+        </dl>
+        <div class="stack">
+          <button class="btn primary wide" data-action="restart">다시 달리기<kbd>Enter</kbd></button>
+          <button class="btn ghost wide" data-action="menu">메인 화면<kbd>Esc</kbd></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 옵션 · 조작법 시트 -->
+    <aside id="sheet" aria-hidden="true">
+      <header>
+        <h2 id="sheetTitle">옵션</h2>
+        <button class="icon-btn" id="sheetClose" title="닫기 (Esc)"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
+      </header>
+
+      <div class="pane" id="optionsPane">
+        <section class="group">
+          <h3>차량 색상 <span id="paintName" class="muted"></span></h3>
+          <div class="swatches" id="swatches"></div>
+        </section>
+
+        <section class="group">
+          <h3>주행 성능</h3>
+          <div class="field">
+            <div class="field-head"><label for="vmaxInput">최고속도</label><output id="vmaxVal">262 km/h</output></div>
+            <input id="vmaxInput" type="range" min="262" max="450" step="1" />
+            <div class="ticks"><span>262 순정</span><span>450</span></div>
+            <p class="hint" id="settingsNote"></p>
+          </div>
+          <div class="field">
+            <div class="field-head"><label for="accelInput">가속력</label><output id="accelVal">×1.0</output></div>
+            <input id="accelInput" type="range" min="0.5" max="2" step="0.1" />
+            <div class="ticks"><span>×0.5</span><span>×1.0</span><span>×2.0</span></div>
+          </div>
+        </section>
+
+        <section class="group">
+          <h3>조향 보조</h3>
+          <label class="switch-row">
+            <span>키를 놓으면 도로 방향으로 정렬</span>
+            <input type="checkbox" id="assistInput" class="switch" />
+          </label>
+          <p class="hint sub">끄면 키를 놓아도 차가 향한 방향 그대로 달립니다. 반대로 꺾어서 직접 바로잡아야 합니다.</p>
+        </section>
+
+        <section class="group">
+          <h3>부스터</h3>
+          <div class="field">
+            <div class="field-head"><label for="chargeInput">충전 속도</label><output id="chargeVal">×1.0</output></div>
+            <input id="chargeInput" type="range" min="0.25" max="4" step="0.25" />
+            <div class="ticks"><span>느림</span><span>빠름</span></div>
+          </div>
+        </section>
+
+        <section class="group">
+          <h3>교통량</h3>
+          <div class="seg" id="trafficSeg" role="radiogroup"></div>
+        </section>
+
+        <section class="group">
+          <h3>소리</h3>
+          <label class="switch-row">
+            <span>엔진·바람·충돌음</span>
+            <input type="checkbox" id="soundInput" class="switch" />
+          </label>
+        </section>
+
+        <button class="btn ghost small" id="settingsReset">기본값으로</button>
+      </div>
+
+      <div class="pane" id="controlsPane">
+        <ul class="keys">
+          <li><span><kbd>W</kbd><kbd>↑</kbd></span>가속</li>
+          <li><span><kbd>S</kbd><kbd>↓</kbd></span>브레이크</li>
+          <li><span><kbd>A</kbd><kbd>D</kbd><kbd>←</kbd><kbd>→</kbd></span>조향</li>
+          <li><span><kbd class="wide">Space</kbd></span>부스터 (누르고 있는 동안 분사)</li>
+          <li><span><kbd>R</kbd></span>차로 복귀</li>
+          <li><span><kbd>C</kbd></span>차량 색상 바꾸기</li>
+          <li><span><kbd>M</kbd></span>소리 켜기/끄기</li>
+          <li><span><kbd>O</kbd></span>옵션</li>
+          <li><span><kbd>Esc</kbd></span>일시정지</li>
+        </ul>
+        <p class="hint">벽에 오래 붙어 있을수록, 무거운 차와 부딪힐수록 속도를 많이 잃습니다. 오토바이는 가볍습니다.</p>
+      </div>
+    </aside>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
